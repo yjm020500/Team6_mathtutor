@@ -682,8 +682,6 @@ if __name__ == "__main__":
             latex = get_latex_from_mathpix(image_path,mode)
             handle_latex(latex, mode)
             print(" 's' + 엔터 → 녹음 시작/중지, 'o' + 엔터 → 확인 'e' + 엔터 → 종료")
-        elif cmd == 'e':
-            break
         elif cmd == "s":
             if not recording:
                 start_recording()
