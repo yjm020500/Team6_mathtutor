@@ -50,13 +50,14 @@ pip install scipy
 
 ### 라즈베리파이5 UTF-8설정
 ```bash
+#raspi-config 진입한 다음
 sudo raspi-config
-#로 raspi-config 진입한 다음
-#5. Localisation options - L1. Locale - ko_KR.UTF-8 UTF-8추가
-#만약
+# 5. Localisation options -> L1. Locale -> ko_KR.UTF-8 UTF-8추가
+
+#변경 확인
 locale
-#로 확인하였을 때 바뀌지 않았을 시
+
+#변경이 안됐을 시 직접 편집
 sudo nano /etc/default/locale
-#로 직접 편집
 ```
 
