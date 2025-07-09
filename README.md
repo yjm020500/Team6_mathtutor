@@ -29,7 +29,7 @@ pip install requests
 pip install gtts
 pip install sympy
 pip install opencv-python==4.5.5.64
-pip install numpy==1.23.5
+pip install numpy==1.23.latex2mathml
 
 # Node.js + SRE
 sudo apt install nodejs npm
@@ -41,4 +41,9 @@ sudo apt install mpg123
 
 # OpenCV GUI 에러시
 sudo apt install libgtk2.0-dev pkg-config
+
+#Whisper
+pip install sounddevice
+ pip install -U openai-whisper
+pip install scipy
 ```
