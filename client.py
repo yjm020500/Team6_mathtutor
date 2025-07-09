@@ -7,6 +7,11 @@ import cv2
 import requests
 import re
 import os
+import sounddevice as sd
+import numpy as np
+import wave
+import whisper
+from scipy.signal import resample_poly
 from gtts import gTTS
 from latex2mathml.converter import convert as latex2mathml
 from sympy import symbols, sympify, integrate, diff, solve, fourier_transform, exp, pi
@@ -16,9 +21,24 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     implicit_multiplication_application
 )
+# ===== 설정 =====
+RATE_IN = 48000           # 실제 마이크 샘플레이트 (보통 48kHz)
+RATE_OUT = 16000          # Whisper에 맞는 샘플레이트
+CHANNELS = 1
+OUTPUT_WAV = "recorded.wav"
+OUTPUT_TXT = "transcript.txt"
+MODEL_NAME = "small"
+#MODEL_NAME = "medium"
+GAIN = 3.0                # 녹음 볼륨 증폭 배율
+
+recording = False
+audio_data = []
+stream = None
 
 HOST = '10.10.15.165'
 PORT = 12345
+
+q_flag=1
 
 transformations = standard_transformations + (implicit_multiplication_application,)
 
@@ -28,27 +48,27 @@ def safe_parse(expr_str):
 def run_camera_capture():
     print("[카메라 실행 중] (q를 누르면 수식 캡처)")
 
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-fps = 20.0
+    width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    fps = 20.0
 
-while(cap.isOpened()):
-	ret, frame = cap.read()
-	if ret is False:
-		print("Can't receive frame (stream end?). Exiting ...")
-		break
-	cv2.imshow("Camera", frame)
+    while(cap.isOpened()):
+	    ret, frame = cap.read()
+	    if ret is False:
+		    print("Can't receive frame (stream end?). Exiting ...")
+		    break
+	    cv2.imshow("Camera", frame)
 
-	key = cv2.waitKey(1)
-	if key & 0xFF== ord('q'):
-		cv2.imwrite("capture.jpg", frame)
-		break
-cap.release()
-cv2.destroyAllWindows()
+	    key = cv2.waitKey(1)
+	    if key & 0xFF== ord('q'):
+		    cv2.imwrite("capture.jpg", frame)
+		    break
+    cap.release()
+    cv2.destroyAllWindows()
 
 APP_ID = "ai_tutor_53fc7f_e30dd0"
 APP_KEY = "86bf3ac09af8c882ea559da4ff73c32f5574752960f5b173197e842cb13c822b"
@@ -223,6 +243,18 @@ def solve_derivative(latex_expr):
     print("> 함수:", expr)
     print("> 도함수:", diff(expr, x))
     return diff(expr, x)
+    
+def solve_equation(latex_expr):
+    print("\n[방정식 모드] 수식:", latex_expr)
+    match = re.match(r'(.+)=0', latex_expr.replace(" ", ""))
+    if not match:
+        print("> 방정식 형태 아님")
+        return
+    left = insert_multiplication(clean_exponents(match.group(1).replace("^", "**")))
+    expr = sympify(left)
+    print("> 방정식:", expr, "= 0")
+    print("> 해:", solve(expr, x))
+    return solve(expr, x)
 
 def solve_fourier(latex_expr):
     print("\n[푸리에 변환 모드] 수식:", latex_expr)
@@ -281,9 +313,6 @@ Follow the rules strictly and respond accordingly.
     return prompt
 
 
-
-
-
 def ask_gemma_via_server(prompt, host=HOST, port=PORT):
     print("\n{Gemma 서버에 질문 전송 중...}\n")
     try:
@@ -337,13 +366,16 @@ def latex_to_speech(latex_str):
         return latex_str
 
 def process_text(text):
-    pattern = re.compile(r'\$(.+?)\$', re.DOTALL)
-    def replacer(m):
-        latex = m.group(1).replace('\n', ' ').strip()
-        return latex_to_speech(latex)
-    return pattern.sub(replacer, text)
+	# 파일에 저장
+	if q_flag:
+		with open("gemma3_answer.txt", "w", encoding="utf-8") as f:
+			f.write(text)
 
-import os
+	pattern = re.compile(r'\$(.+?)\$', re.DOTALL)
+	def replacer(m):
+		latex = m.group(1).replace('\n', ' ').strip()
+		return latex_to_speech(latex)
+	return pattern.sub(replacer, text)
 
 def process_and_tts(raw_text):
     processed_text = process_text(raw_text)
@@ -357,12 +389,124 @@ def process_and_tts(raw_text):
     tts.save(mp3_path)
     print(f" {mp3_path} 생성 완료!")
 
+    # 텍스트 파일로 저장
+    txt_path = 'output_sre_gtts.txt'
+    with open(txt_path, 'w', encoding='utf-8') as f:
+        f.write(processed_text)
+    print(f" {txt_path} 생성 완료!")
+
     # 자동 재생 (Ubuntu/Linux)
     try:
         print(" 음성 자동 재생 중...")
         os.system(f"mpg123 {mp3_path}")
     except Exception as e: 
         print(f" 음성 재생 오류: {e}")
+    
+    
+    ################
+    
+def create_prompt_for_gemma_to_ask():
+    # 명령어와 이전 output 읽기
+    with open("transcript.txt", "r", encoding="utf-8") as f:
+        command = f.read().strip()
+    with open("gemma3_answer.txt", "r", encoding="utf-8") as f:
+        previous_output = f.read().strip()
+
+    # 명령어에 따른 프롬프트 작성
+    command = command.replace(" ", "").lower()
+    if command == "정답알려줘" or command =="정답알려줘.":
+        instruction = "다음 문제에 대한 정답만 간결하게 LaTeX 수식으로 작성해줘."
+    elif command == "설명해줘" or command == "설명해줘.":
+        instruction = "다음 문제를 단계별로 3~4문장으로 간단히 설명해줘. 수식은 모두 LaTeX로 표현하고 한 문장마다 개행해."
+    elif command == "이론알려줘" or command == "이론알려줘.":
+        instruction = "다음 문제와 관련된 수학적 이론을 간단히 소개해줘. LaTeX 수식과 함께 최대 5문장 이내로 작성해."
+    else:
+        print(f"> 알 수 없는 명령어: {command}")
+        return None
+
+    prompt = f"""Please respond according to the following instruction:
+
+Instruction:
+{instruction}
+
+Problem:
+{previous_output}
+
+You MUST follow ALL of these rules. NO exceptions.
+
+1. Write ALL mathematical expressions in LaTeX format and enclose them in dollar signs ($...$).
+2. Keep the explanation short and focused, avoid unnecessary words.
+3. Entire response MUST be written in Korean.
+4. Avoid repeating the question in the answer.
+
+Respond now.
+"""
+    return prompt
+
+        
+
+def start_recording():
+    global recording, audio_data, stream
+    print(" 녹음 시작! (다시 s + 엔터 누르면 중지)")
+    audio_data = []
+    recording = True
+
+    def callback(indata, frames, time, status):
+        if recording:
+            audio = indata[:, 0].astype(np.float32)  # 1채널 기준
+            audio = audio * GAIN
+            audio = np.clip(audio, -32768, 32767).astype(np.int16)
+            # 48kHz → 16kHz 리샘플링
+            audio_16k = resample_poly(audio, up=1, down=3).astype(np.int16)
+            audio_data.append(audio_16k)
+
+    stream = sd.InputStream(samplerate=RATE_IN, channels=CHANNELS, dtype='int16', device=2, callback=callback)
+    #stream = sd.InputStream(samplerate=RATE_IN, channels=CHANNELS, dtype='int16', callback=callback)
+    stream.start()
+
+def stop_recording():
+    global recording, stream
+    recording = False
+    stream.stop()
+    stream.close()
+    print(" 녹음 중지!")
+
+    audio_np = np.concatenate(audio_data)
+    with wave.open(OUTPUT_WAV, 'wb') as wf:
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(2)
+        wf.setframerate(RATE_OUT)
+        wf.writeframes(audio_np.tobytes())
+    print(f" 저장됨: {OUTPUT_WAV}")
+
+    transcribe_with_whisper(OUTPUT_WAV, OUTPUT_TXT)
+
+def transcribe_with_whisper(wav_path, txt_path):
+    print(f" Whisper {MODEL_NAME} 로드 중…")
+    model = whisper.load_model(MODEL_NAME)
+    print(f" 음성 인식 중…")
+    result = model.transcribe(wav_path, language="ko")
+
+    text = result["text"]
+    print(" 인식 결과:")
+    print(text)
+
+    with open(txt_path, 'w', encoding='utf-8') as f:
+        f.write(text + "\n")
+    print(f" 텍스트 저장됨: {txt_path}")
+    
+def ask_ollama():
+    prompt = create_prompt_for_gemma_to_ask()
+    if not prompt:  # None 또는 빈 문자열 차단
+        print("> 명령어에 맞는 프롬프트 생성 실패 또는 빈 프롬프트입니다.")
+        return
+    gemma_response = ask_gemma_via_server(prompt)
+    if gemma_response:
+        process_and_tts(gemma_response)
+    else:
+        print("> Gemma 서버 응답 없음.")
+
+################
 
 #  최종 수식 파서
 def handle_latex(latex):
@@ -411,10 +555,10 @@ def handle_latex(latex):
         gemma_response = ask_gemma_via_server(prompt)
 
         if gemma_response:
-            # 음성까지 처리
             process_and_tts(gemma_response)
         else:
             print("> Gemma 서버 응답 없음.")
+
 
 
 
@@ -424,3 +568,24 @@ if __name__ == "__main__":
     image_path = "capture.jpg"
     latex = get_latex_from_mathpix(image_path)
     handle_latex(latex)
+    print(" 's' + 엔터 → 녹음 시작/중지, 'o' + 엔터 → 확인 'e' + 엔터 → 종료")
+    q_flag=0
+    while True:
+        cmd = input("> ").strip()
+        if cmd == "s":
+            if not recording:
+                start_recording()
+            else:
+                stop_recording()
+        elif cmd == "o":
+            if recording:
+                stop_recording()
+            print("gemma3에게 질문합니다.")
+            ask_ollama()
+        elif cmd == "e":
+            if recording:
+                stop_recording()
+            print("종료합니다.")
+            break
+        else:
+            print(" 's' 또는 'q'를 입력해주세요.")
