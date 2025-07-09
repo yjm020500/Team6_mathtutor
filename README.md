@@ -44,6 +44,6 @@ sudo apt install libgtk2.0-dev pkg-config
 
 #Whisper
 pip install sounddevice
- pip install -U openai-whisper
+pip install -U openai-whisper
 pip install scipy
 ```
