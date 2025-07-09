@@ -23,7 +23,7 @@ python3 -m venv .env
 source .env/bin/activate
 ```
 
-### 패키지 설치
+### 패키지 설치(라즈베리파이5)
 ```bash
 pip install requests
 pip install gtts
@@ -35,9 +35,6 @@ pip install numpy==1.23.5
 sudo apt install nodejs npm
 npm install mathjax-node
 npm install speech-rule-engine
-
-# Gemma 실행용
-sudo snap install ollama
 
 # 음성 출력용
 sudo apt install mpg123
