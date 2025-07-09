@@ -14,10 +14,17 @@
 - Ollama 기반 LLM (Gemma 3:4b) 풀이 생성
 
 # Python 가상환경 생성 및 패키지 설치
+### ollama 설치
+https://ollama.com/download
 
+### 가상환경 생성
 ```bash
 python3 -m venv .env
 source .env/bin/activate
+```
+
+### 패키지 설치
+```bash
 pip install requests
 pip install gtts
 pip install sympy
@@ -37,3 +44,4 @@ sudo apt install mpg123
 
 # OpenCV GUI 에러시
 sudo apt install libgtk2.0-dev pkg-config
+```
