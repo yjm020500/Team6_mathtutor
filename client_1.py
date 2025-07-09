@@ -326,7 +326,7 @@ Example format:
 Follow the rules strictly and respond accordingly.
 """
     elif mode == 'verify':
-    prompt = f"""Judge whether the following solution steps and final answer are mathematically correct.
+    	prompt = f"""Judge whether the following solution steps and final answer are mathematically correct.
 Problem:
 {expr_line}
 
@@ -544,7 +544,7 @@ def ask_ollama():
 
 #  최종 수식 파서
 def handle_latex(latex,mode = 'default'):
-    if mode == 'default'
+    if mode == 'default':
         # 여러 줄 처리
         latex = re.sub(r"\\begin{array}{.*?}", "", latex)
         latex = re.sub(r"\\begin{aligned}", "", latex)
