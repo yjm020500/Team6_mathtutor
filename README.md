@@ -11,7 +11,7 @@
 - SymPy를 통한 수식 계산 (정적분, 미분, 방정식, 푸리에 변환)
 - Speech Rule Engine을 이용한 수식 음성 해석
 - gTTS 기반 음성 출력
-- Ollama 기반 LLM (Gemma 3:4b) 풀이 생성
+- Ollama 기반 LLM (Gemma 3:12b) 풀이 생성
 
 # Python 가상환경 생성 및 패키지 설치
 ### ollama 설치
