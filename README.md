@@ -61,7 +61,7 @@ locale
 sudo nano /etc/default/locale
 ```
 
-### 실행 방법
+# 실행 방법
 1. server 역할을 할 컴퓨터에서 server.py를 실행
 2. client 역할을 할 라즈베리파이에서 client.py를 실행
 3. 수식과 요청이 적힌 두 줄 또는 풀이가 적힌 부분을 카메라로 찍은 후(q) 답을 구할지(q) 풀이가 맞는 지 확인하기(a)를 고르기
