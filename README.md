@@ -48,7 +48,7 @@ pip install -U openai-whisper
 pip install scipy
 ```
 
-### 라즈베리파이5 UTF-8설정
+# 라즈베리파이5 UTF-8설정
 ```bash
 #raspi-config 진입한 다음
 sudo raspi-config
