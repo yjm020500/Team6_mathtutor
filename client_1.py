@@ -35,8 +35,10 @@ recording = False
 audio_data = []
 stream = None
 
+##########################
 HOST = '10.10.15.165'
 PORT = 12345
+#########################
 
 q_flag=1
 
@@ -584,7 +586,7 @@ def handle_latex(latex,mode = 'default'):
 
         if result is not None:
             # 프롬프트 생성
-            prompt = create_prompt_for_gemma(expr_line, cmd_line, result)
+            prompt = create_prompt_for_gemma(expr_line, cmd_line, result,"",mode)
 
             # 서버로 전송
             gemma_response = ask_gemma_via_server(prompt)
@@ -659,7 +661,11 @@ def handle_latex(latex,mode = 'default'):
         
         # 프롬프트 생성 및 Gemma 호출
         prompt = create_prompt_for_gemma(question,"", answer, following_lines, mode)
-        ask_gemma_with_ollama(prompt)
+        gemma_response = ask_gemma_via_server(prompt)
+        if gemma_response:
+            process_and_tts(gemma_response)
+        else:
+            print("> Gemma 서버 응답 없음.")
 
 
 
