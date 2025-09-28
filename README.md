@@ -69,3 +69,5 @@ sudo nano /etc/default/locale
 5. 추가 질문을 위한 녹음(s)시 STT된 결과가 맞다면 o로 확정
 6. 통신을 통해 Gemma3의 답변을 TTS로 듣기
 
+# 상세 자료
+- [AI Math Tutor 개발 Project](https://github.com/yjm020500/Team6_mathtutor/blob/main/Docs/AI%20Math%20Tutor%20%EA%B0%9C%EB%B0%9C%20Project.pdf)
