@@ -71,3 +71,9 @@ sudo nano /etc/default/locale
 
 # 상세 자료
 - [AI Math Tutor 개발 Project](https://github.com/yjm020500/Team6_mathtutor/blob/main/Docs/AI%20Math%20Tutor%20%EA%B0%9C%EB%B0%9C%20Project.pdf)
+- Demo 영상
+  - [미분 문제 풀이](https://youtu.be/OSJdV-KfraM)
+  - [Fourier Transform 문제 풀이](https://youtu.be/8Bwj941HSgI)
+  - [적분 문제 풀이](https://youtu.be/CJEOSWtD7Qo)
+  - [방정식 문제 풀이및 음성 질문](https://youtu.be/ioXts7N1VJM)
+  - [답안지 제출](https://youtu.be/_4CchtYSSIc)
