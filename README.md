@@ -13,6 +13,13 @@
 - gTTS 기반 음성 출력
 - Ollama 기반 LLM (Gemma 3:12b) 풀이 생성
 
+# 개발 환경
+<img width="983" height="192" alt="image" src="https://github.com/user-attachments/assets/a87d975f-9fff-45de-985c-6febf77ad20f" />
+
+- HW: Raspberry Pi, USB 2.0 PC CAM, USB형 MIC
+- 언어: python, JavaScript
+- Tool: Mathpix API, LLM gemma3:12b, gTTS, Whisper STT
+
 # Python 가상환경 생성 및 패키지 설치
 ### ollama 설치
 https://ollama.com/download
